@@ -65,7 +65,7 @@ colon: .asciiz ":"
 
         move $t0 $s0    # Moving array into $t0
         li $t2 0    # Setting $t2 to be sum of variables
-        li $t7 1    # Setting $t7 to be 'i' variable
+        li $t7 1   # Setting $t7 to be 'i' variable
 
         loop:
             # find sum
@@ -94,7 +94,6 @@ colon: .asciiz ":"
             # They are OR'd in the C/C++ template
             # Do you need to OR them in MIPs too? 
             
-            addi $s1 $s1 -1
             beq $s1 $0 function_end # $s1 = depth
             li $t4 1    # t4 = 1
             beq $s3 $t4 function_end    # $s3 = arr_len
@@ -151,6 +150,7 @@ colon: .asciiz ":"
             # Make sure your $s registers have the correct values before calling
             # Remember we recursively call with small array first
             # So load small array arguments in $s registers
+            addi $s1 $s1 -1
             
             # This is updating the buffer so that we don't overwrite our old values
             addi $s2, $s2, 80
