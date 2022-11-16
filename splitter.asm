@@ -65,7 +65,7 @@ colon: .asciiz ":"
 
         move $t0 $s0    # Moving array into $t0
         li $t2 0    # Setting $t2 to be sum of variables
-        li $t7 1   # Setting $t7 to be 'i' variable
+        li $t7 1    # Setting $t7 to be 'i' variable
 
         loop:
             # find sum
@@ -94,56 +94,67 @@ colon: .asciiz ":"
             # They are OR'd in the C/C++ template
             # Do you need to OR them in MIPs too? 
             
-            beq $s1 $0 function_end # $s1 = depth
+            beq $s1 $zero function_end # $s1 = depth
             li $t4 1    # t4 = 1
             beq $s3 $t4 function_end    # $s3 = arr_len
 
         # calculate the average 
-        div $t2, $a3 # what register do we divide by? 
+        div $t2, $s3 # what register do we divide by? 
         mflo $t3 # avg 
 
+
+
+
         # This is the main loop, not for free :/
+        move $t0 $s0    # Putting array into $t0
+
         li $t4 0    # $t4 = j
         li $t5 0    # $t5 = k
-        li $t6 0    # $t6 = small buffer
-        li $t2 0    # $t2 = big buffer
+
         li $t7 0    # Setting $t7 to be 'i' variable
+        li $s4 0    # Setting actual array lenth small
+        li $s5 0    # Setting actual array lenth small
+
+        move $t2 $s2    # Smaller array $t2
+        addiu $t6 $t2 40    # Bigger array $t6
+
         loop2:
             # find big and small array
             # Remember the conditions for splitting
-            beq $t7 $s3 closing
+            bge $t7 $s3 closing
+
             lw $t1 0($t0)
-            bgt $t3 $t1 ltaverage
+
+            ble $t1 $t3 ltaverage
 
             j gtaverage
 
             # entry <= average put in small array
             ltaverage:
+                sw $t1 0($t2)
+                addiu $t2 $t2 4
+                addi $s4 $s4 1
 
-                add $s2 $s2 $t6
-                sw $t0 0($s2)
-                sub $s2 $s2 $t6
-                addi $t6 $t6 4
                 j increment
 
             # entry > average put in big array
             gtaverage:
-                add $s2 $s2 $t2
-                sw $t0 40($s2)
-                sub $s2 $s2 $t2
-                addi $t2 $t2 4
+                sw $t1 0($t6)
+                addiu $t6 $t6 4
+                addi $s5 $s5 1
+
                 j increment
 
             increment:
-                addi $t0 $t0 4
+                addiu $t0 $t0 4
                 addi $t7, $t7, 1
                 j loop2
 
         closing:
         # This is the section where we prepare to call the function recursively.
         
-            move $s4, $t6 # save the small array length value 
-            move $s5, $t2 # save the big array length value
+            # move $s4, $t6 # save the small array length value 
+            # move $s5, $t2 # save the big array length value
 
             jal ConventionCheck # DO NOT REMOVE 
 
@@ -151,21 +162,28 @@ colon: .asciiz ":"
             # Remember we recursively call with small array first
             # So load small array arguments in $s registers
             addi $s1 $s1 -1
-            
+            # addi $t0 $t0 -40
+
+            move $s0 $s2
+
             # This is updating the buffer so that we don't overwrite our old values
             addi $s2, $s2, 80
-            # We call small array first so we load small array length as arr_len
-            move $s3, $s4 
+            move $s3, $s4   # s4 is length of smaller
             
             jal disaggregate
 
             jal ConventionCheck # DO NOT REMOVE
             
+
+
+
+
             # Similarly for big array, we mirror the call structure of small array as above
             # But with the values appropriate for big array. 
+            addiu $s0 $s0 40
 
             addi $s2, $s2, 80
-            move $s3, $s5 # big array call second
+            move $s3, $s5 # s5 is length of bigger
             
             jal disaggregate
 
@@ -183,10 +201,9 @@ colon: .asciiz ":"
             lw $s3 12($sp)
             lw $s4 16($sp)
             lw $s5 20($sp)
-            lw $ra 24($sp)
-            # Load values before update if you have to
+            lw $ra 24($sp)  # Load values before update if you have to
             addiu $sp, $sp, 28 # ?? = the positive of how many values we store in (stack * 4)
-            # Load values after update if you have to
+            jr $ra
     
     exit:
         li $v0, 10
